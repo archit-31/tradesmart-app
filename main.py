@@ -67,7 +67,32 @@ def ts_post(endpoint, payload, auth=True):
 
 @app.get("/oauth-url")
 def get_oauth_url():
-    return {"url": f"https://v2api.tradesmartonline.in/OAuthlogin/authorize/oauth?client_id={APP_KEY}"}
+    return {"url": f"https://v2api.tradesmartonline.in/OAuthlogin/authorize/oauth?client_id={APP_KEY}&redirect_uri=https://tradesmart-app.onrender.com/callback"}
+
+@app.get("/callback", response_class=HTMLResponse)
+def oauth_callback(code: str = None, error: str = None):
+    if error or not code:
+        return HTMLResponse(content="""
+            <html><body style='font-family:sans-serif;text-align:center;padding:60px;background:#0a0e1a;color:#e2e8f0'>
+            <h2 style='color:#ef4444'>Login Failed</h2>
+            <p><a href='/' style='color:#3b82f6'>Go back and try again</a></p>
+            </body></html>
+        """)
+    return HTMLResponse(content=f"""
+        <html><body style='font-family:sans-serif;text-align:center;padding:60px;background:#0a0e1a;color:#e2e8f0'>
+        <h2 style='color:#22c55e'>Login Successful!</h2>
+        <p>Completing login...</p>
+        <script>
+            var code = '{code}';
+            if (window.opener) {{
+                window.opener.postMessage({{code: code}}, '*');
+                setTimeout(() => window.close(), 500);
+            }} else {{
+                window.location.href = '/?code=' + code;
+            }}
+        </script>
+        </body></html>
+    """)
 
 
 @app.post("/auth/token")
