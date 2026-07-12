@@ -103,7 +103,7 @@ def exchange_token(req: TokenRequest):
     if ret and ret.get("stat") == "Ok":
         token_store["access_token"] = ret.get("access_token") or ret.get("susertoken")
         return {"success": True, "uid": ret.get("uid"), "uname": ret.get("uname"), "actid": ret.get("actid")}
-    raise HTTPException(status_code=401, detail=ret.get("emsg", "Login failed"))
+    raise HTTPException(status_code=401, detail=f"TradeSmart said: {ret} | checksum input was: {APP_KEY + SECRET_KEY + req.code[:6]}...")
 
 
 @app.get("/auth/status")
