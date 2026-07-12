@@ -1,0 +1,986 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TradeSmart — Trading Desk</title>
+  <style>
+    /* ── Reset & Base ──────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #0a0e1a;
+      --surface:   #111827;
+      --border:    #1e2d45;
+      --muted:     #374151;
+      --text:      #e2e8f0;
+      --subtle:    #64748b;
+      --accent:    #3b82f6;
+      --buy:       #22c55e;
+      --buy-dark:  #15803d;
+      --sell:      #ef4444;
+      --sell-dark: #b91c1c;
+      --gold:      #f59e0b;
+      --radius:    8px;
+      --mono:      'JetBrains Mono', 'Fira Code', monospace;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── Header ────────────────────────────────────────────────── */
+    header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 0 32px;
+      height: 60px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 700;
+      font-size: 17px;
+      letter-spacing: -0.3px;
+    }
+
+    .logo-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--buy);
+      box-shadow: 0 0 8px var(--buy);
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50%       { opacity: 0.4; }
+    }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .user-badge {
+      font-size: 13px;
+      color: var(--subtle);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .user-badge span {
+      color: var(--text);
+      font-weight: 600;
+    }
+
+    .time-display {
+      font-family: var(--mono);
+      font-size: 13px;
+      color: var(--subtle);
+      background: var(--bg);
+      padding: 4px 10px;
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+    }
+
+    /* ── Main ──────────────────────────────────────────────────── */
+    main {
+      flex: 1;
+      max-width: 900px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 40px 24px;
+    }
+
+    /* ── Login Screen ──────────────────────────────────────────── */
+    #login-screen {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 60vh;
+      gap: 32px;
+    }
+
+    .login-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 48px 56px;
+      text-align: center;
+      max-width: 480px;
+      width: 100%;
+    }
+
+    .login-icon {
+      width: 64px;
+      height: 64px;
+      background: linear-gradient(135deg, #1d4ed8, #3b82f6);
+      border-radius: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 24px;
+      font-size: 28px;
+    }
+
+    .login-card h1 {
+      font-size: 24px;
+      font-weight: 700;
+      margin-bottom: 8px;
+      letter-spacing: -0.5px;
+    }
+
+    .login-card p {
+      color: var(--subtle);
+      font-size: 14px;
+      line-height: 1.6;
+      margin-bottom: 32px;
+    }
+
+    .btn-connect {
+      background: var(--accent);
+      color: white;
+      border: none;
+      border-radius: var(--radius);
+      padding: 14px 32px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      width: 100%;
+      transition: all 0.15s;
+      letter-spacing: -0.2px;
+    }
+
+    .btn-connect:hover { background: #2563eb; transform: translateY(-1px); }
+    .btn-connect:active { transform: translateY(0); }
+
+    /* ── Code Input ────────────────────────────────────────────── */
+    #code-screen {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 60vh;
+      gap: 24px;
+    }
+
+    .code-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 40px 48px;
+      max-width: 520px;
+      width: 100%;
+    }
+
+    .code-card h2 {
+      font-size: 20px;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    .steps {
+      margin: 20px 0;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .step {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      font-size: 14px;
+      color: var(--subtle);
+      line-height: 1.5;
+    }
+
+    .step-num {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: var(--muted);
+      color: var(--text);
+      font-size: 11px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+
+    .step.active .step-num { background: var(--accent); }
+    .step.active { color: var(--text); }
+
+    .code-input-wrap {
+      margin-top: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .code-input-wrap label {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--subtle);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .code-input-wrap input {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text);
+      font-family: var(--mono);
+      font-size: 13px;
+      padding: 12px 14px;
+      width: 100%;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+
+    .code-input-wrap input:focus { border-color: var(--accent); }
+    .code-input-wrap input::placeholder { color: var(--muted); }
+
+    .btn-submit {
+      margin-top: 16px;
+      background: var(--accent);
+      color: white;
+      border: none;
+      border-radius: var(--radius);
+      padding: 13px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      width: 100%;
+      transition: background 0.15s;
+    }
+
+    .btn-submit:hover { background: #2563eb; }
+    .btn-submit:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    /* ── Trading Screen ─────────────────────────────────────────── */
+    #trading-screen { display: none; }
+
+    .screen-header {
+      margin-bottom: 28px;
+    }
+
+    .screen-header h2 {
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+    }
+
+    .screen-header p {
+      font-size: 13px;
+      color: var(--subtle);
+      margin-top: 4px;
+    }
+
+    .refresh-btn {
+      background: none;
+      border: 1px solid var(--border);
+      color: var(--subtle);
+      border-radius: var(--radius);
+      padding: 6px 14px;
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.15s;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .refresh-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+    .header-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 28px;
+    }
+
+    /* ── Trade Rows ─────────────────────────────────────────────── */
+    .trade-table {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .table-head {
+      display: grid;
+      grid-template-columns: 48px 1fr 80px 100px 160px;
+      gap: 12px;
+      padding: 0 16px 8px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .table-head span {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: var(--subtle);
+    }
+
+    .trade-row {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      display: grid;
+      grid-template-columns: 48px 1fr 80px 100px 160px;
+      gap: 12px;
+      align-items: center;
+      padding: 14px 16px;
+      transition: border-color 0.15s;
+    }
+
+    .trade-row:hover { border-color: var(--muted); }
+
+    .trade-row.empty { opacity: 0.4; }
+
+    .row-num {
+      font-family: var(--mono);
+      font-size: 12px;
+      color: var(--subtle);
+      font-weight: 600;
+    }
+
+    .row-symbol {
+      font-weight: 600;
+      font-size: 15px;
+      letter-spacing: -0.2px;
+    }
+
+    .row-symbol.empty-sym {
+      color: var(--muted);
+      font-weight: 400;
+      font-size: 13px;
+    }
+
+    .row-qty {
+      font-family: var(--mono);
+      font-size: 14px;
+      color: var(--text);
+    }
+
+    .row-price {
+      font-family: var(--mono);
+      font-size: 14px;
+      color: var(--gold);
+      font-weight: 600;
+    }
+
+    .row-actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    .btn-buy, .btn-sell {
+      flex: 1;
+      border: none;
+      border-radius: 6px;
+      padding: 8px 0;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      letter-spacing: 0.3px;
+      transition: all 0.12s;
+      position: relative;
+    }
+
+    .btn-buy {
+      background: rgba(34, 197, 94, 0.15);
+      color: var(--buy);
+      border: 1px solid rgba(34, 197, 94, 0.3);
+    }
+
+    .btn-buy:hover:not(:disabled) {
+      background: var(--buy);
+      color: #fff;
+      border-color: var(--buy);
+    }
+
+    .btn-sell {
+      background: rgba(239, 68, 68, 0.15);
+      color: var(--sell);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+    }
+
+    .btn-sell:hover:not(:disabled) {
+      background: var(--sell);
+      color: #fff;
+      border-color: var(--sell);
+    }
+
+    .btn-buy:disabled, .btn-sell:disabled {
+      opacity: 0.3;
+      cursor: not-allowed;
+    }
+
+    .btn-buy.loading, .btn-sell.loading {
+      opacity: 0.7;
+      cursor: wait;
+    }
+
+    /* ── Order Log ──────────────────────────────────────────────── */
+    .log-section {
+      margin-top: 40px;
+    }
+
+    .log-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
+
+    .log-header h3 {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--subtle);
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+    }
+
+    .clear-log {
+      background: none;
+      border: none;
+      color: var(--muted);
+      font-size: 12px;
+      cursor: pointer;
+    }
+
+    .clear-log:hover { color: var(--subtle); }
+
+    .log-list {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      max-height: 300px;
+      overflow-y: auto;
+    }
+
+    .log-item {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 10px 14px;
+      font-size: 13px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      animation: slideIn 0.2s ease;
+    }
+
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateY(-4px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .log-time {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--muted);
+      flex-shrink: 0;
+    }
+
+    .log-tag {
+      font-size: 11px;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 4px;
+      flex-shrink: 0;
+    }
+
+    .log-tag.buy  { background: rgba(34,197,94,0.15);  color: var(--buy); }
+    .log-tag.sell { background: rgba(239,68,68,0.15);  color: var(--sell); }
+    .log-tag.err  { background: rgba(239,68,68,0.15);  color: var(--sell); }
+    .log-tag.info { background: rgba(59,130,246,0.15); color: var(--accent); }
+
+    .log-msg { color: var(--text); flex: 1; }
+    .log-order { font-family: var(--mono); font-size: 11px; color: var(--subtle); flex-shrink: 0; }
+
+    .empty-log {
+      text-align: center;
+      color: var(--muted);
+      font-size: 13px;
+      padding: 32px 0;
+    }
+
+    /* ── Toast ──────────────────────────────────────────────────── */
+    #toast {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%) translateY(100px);
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px 20px;
+      font-size: 14px;
+      font-weight: 500;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+      transition: transform 0.25s ease;
+      z-index: 1000;
+      white-space: nowrap;
+    }
+
+    #toast.show { transform: translateX(-50%) translateY(0); }
+    #toast.success { border-color: var(--buy); color: var(--buy); }
+    #toast.error   { border-color: var(--sell); color: var(--sell); }
+
+    /* ── Logout ─────────────────────────────────────────────────── */
+    .btn-logout {
+      background: none;
+      border: 1px solid var(--border);
+      color: var(--subtle);
+      border-radius: var(--radius);
+      padding: 6px 14px;
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .btn-logout:hover { border-color: var(--sell); color: var(--sell); }
+
+    /* ── Market status bar ──────────────────────────────────────── */
+    .market-bar {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 10px 16px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 24px;
+      font-size: 13px;
+    }
+
+    .market-open { color: var(--buy); font-weight: 600; }
+    .market-closed { color: var(--sell); font-weight: 600; }
+    .market-label { color: var(--subtle); }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-dot"></div>
+    TradeSmart Desk
+  </div>
+  <div class="header-right">
+    <div class="time-display" id="clock">--:--:--</div>
+    <div class="user-badge" id="user-info" style="display:none">
+      Logged in as <span id="user-name">—</span>
+    </div>
+    <button class="btn-logout" id="btn-logout" style="display:none" onclick="logout()">Logout</button>
+  </div>
+</header>
+
+<main>
+
+  <!-- LOGIN SCREEN -->
+  <div id="login-screen">
+    <div class="login-card">
+      <div class="login-icon">📈</div>
+      <h1>Connect TradeSmart</h1>
+      <p>Log in with your TradeSmart account to start placing trades directly from this dashboard.</p>
+      <button class="btn-connect" onclick="startLogin()">Connect to TradeSmart</button>
+    </div>
+  </div>
+
+  <!-- CODE INPUT SCREEN -->
+  <div id="code-screen">
+    <div class="code-card">
+      <h2>Complete Login</h2>
+      <p style="color:var(--subtle);font-size:14px;margin-top:6px">Follow the steps below after logging in on TradeSmart</p>
+
+      <div class="steps">
+        <div class="step active">
+          <div class="step-num">1</div>
+          <div>Log in with your TradeSmart credentials and OTP on the page that just opened</div>
+        </div>
+        <div class="step active">
+          <div class="step-num">2</div>
+          <div>After login, your browser shows an error page — that's normal. Look at the address bar</div>
+        </div>
+        <div class="step active">
+          <div class="step-num">3</div>
+          <div>Copy the full URL from the address bar (it starts with <code style="color:var(--accent)">https://127.0.0.1?code=</code>)</div>
+        </div>
+        <div class="step active">
+          <div class="step-num">4</div>
+          <div>Paste the URL below and click Confirm</div>
+        </div>
+      </div>
+
+      <div class="code-input-wrap">
+        <label>Paste redirect URL here</label>
+        <input
+          type="text"
+          id="redirect-url-input"
+          placeholder="https://127.0.0.1?code=abc123..."
+        />
+        <button class="btn-submit" id="btn-confirm" onclick="confirmCode()">Confirm Login</button>
+        <button class="btn-submit" style="background:var(--muted);margin-top:4px" onclick="showLogin()">Back</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TRADING SCREEN -->
+  <div id="trading-screen">
+    <div class="header-row">
+      <div class="screen-header">
+        <h2>Trading Desk</h2>
+        <p>Press Buy or Sell to place an order immediately at the price in your sheet</p>
+      </div>
+      <button class="refresh-btn" onclick="loadRows()">
+        ↻ Refresh
+      </button>
+    </div>
+
+    <div class="market-bar" id="market-bar">
+      <span class="market-label">Market</span>
+      <span id="market-status">Checking...</span>
+      <span style="color:var(--muted)">|</span>
+      <span class="market-label">Exchange</span>
+      <span style="color:var(--text)">NFO</span>
+      <span style="color:var(--muted)">|</span>
+      <span class="market-label">Product</span>
+      <span style="color:var(--text)">NRML</span>
+      <span style="color:var(--muted)">|</span>
+      <span class="market-label">Type</span>
+      <span style="color:var(--text)">LMT</span>
+    </div>
+
+    <div class="table-head">
+      <span>#</span>
+      <span>Symbol</span>
+      <span>Qty</span>
+      <span>Price</span>
+      <span>Action</span>
+    </div>
+
+    <div class="trade-table" id="trade-table">
+      <!-- Rows injected by JS -->
+    </div>
+
+    <div class="log-section">
+      <div class="log-header">
+        <h3>Order Log</h3>
+        <button class="clear-log" onclick="clearLog()">Clear</button>
+      </div>
+      <div class="log-list" id="log-list">
+        <div class="empty-log" id="empty-log">No orders placed yet</div>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<div id="toast"></div>
+
+<script>
+  // ── Config ─────────────────────────────────────────────────────
+  const API = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+    ? 'http://localhost:8000'
+    : '';  // same origin in production
+
+  // ── State ──────────────────────────────────────────────────────
+  let loggedIn = false;
+  let userName = '';
+  let orderLog = [];
+
+  // ── Clock ──────────────────────────────────────────────────────
+  function updateClock() {
+    const now = new Date();
+    document.getElementById('clock').textContent =
+      now.toLocaleTimeString('en-IN', { hour12: false });
+  }
+  setInterval(updateClock, 1000);
+  updateClock();
+
+  // ── Market status ──────────────────────────────────────────────
+  function updateMarketStatus() {
+    const now   = new Date();
+    const h     = now.getHours();
+    const m     = now.getMinutes();
+    const mins  = h * 60 + m;
+    const open  = 9 * 60 + 15;
+    const close = 15 * 60 + 30;
+    const el    = document.getElementById('market-status');
+    const day   = now.getDay();
+    if (day === 0 || day === 6) {
+      el.textContent = 'Weekend';
+      el.className   = 'market-closed';
+    } else if (mins >= open && mins < close) {
+      el.textContent = 'Open';
+      el.className   = 'market-open';
+    } else {
+      el.textContent = 'Closed';
+      el.className   = 'market-closed';
+    }
+  }
+  setInterval(updateMarketStatus, 60000);
+  updateMarketStatus();
+
+  // ── Screens ────────────────────────────────────────────────────
+  function showLogin() {
+    document.getElementById('login-screen').style.display = 'flex';
+    document.getElementById('code-screen').style.display  = 'none';
+    document.getElementById('trading-screen').style.display = 'none';
+  }
+
+  function showCode() {
+    document.getElementById('login-screen').style.display  = 'none';
+    document.getElementById('code-screen').style.display   = 'flex';
+    document.getElementById('trading-screen').style.display = 'none';
+  }
+
+  function showTrading() {
+    document.getElementById('login-screen').style.display  = 'none';
+    document.getElementById('code-screen').style.display   = 'none';
+    document.getElementById('trading-screen').style.display = 'block';
+    document.getElementById('user-info').style.display     = 'flex';
+    document.getElementById('btn-logout').style.display    = 'block';
+    document.getElementById('user-name').textContent = userName;
+    loadRows();
+  }
+
+  // ── Login flow ─────────────────────────────────────────────────
+  async function startLogin() {
+    try {
+      const res  = await fetch(`${API}/oauth-url`);
+      const data = await res.json();
+      window.open(data.url, '_blank');
+      showCode();
+    } catch(e) {
+      showToast('Could not reach backend server', 'error');
+    }
+  }
+
+  async function confirmCode() {
+    const input = document.getElementById('redirect-url-input').value.trim();
+    if (!input || !input.includes('code=')) {
+      showToast('Please paste the full redirect URL', 'error');
+      return;
+    }
+
+    const code = input.split('code=')[1]?.split('&')[0]?.trim();
+    if (!code) {
+      showToast('Could not extract code from URL', 'error');
+      return;
+    }
+
+    const btn = document.getElementById('btn-confirm');
+    btn.disabled = true;
+    btn.textContent = 'Confirming...';
+
+    try {
+      const res  = await fetch(`${API}/auth/token`, {
+        method : 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body   : JSON.stringify({ code }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        userName = data.uname || data.uid || 'Trader';
+        loggedIn = true;
+        addLog('info', `Logged in as ${userName}`, '', '');
+        showTrading();
+        showToast(`Welcome, ${userName}!`, 'success');
+      } else {
+        showToast(data.detail || 'Login failed', 'error');
+      }
+    } catch(e) {
+      showToast('Connection error. Is the backend running?', 'error');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Confirm Login';
+    }
+  }
+
+  async function logout() {
+    await fetch(`${API}/auth/logout`, { method: 'DELETE' });
+    loggedIn = false;
+    userName = '';
+    document.getElementById('user-info').style.display  = 'none';
+    document.getElementById('btn-logout').style.display = 'none';
+    showLogin();
+  }
+
+  // ── Load rows from Excel ───────────────────────────────────────
+  async function loadRows() {
+    const table = document.getElementById('trade-table');
+    table.innerHTML = '<div style="text-align:center;padding:32px;color:var(--subtle);font-size:13px">Loading from Excel...</div>';
+
+    try {
+      const res  = await fetch(`${API}/rows`);
+      const data = await res.json();
+      renderRows(data.rows);
+    } catch(e) {
+      table.innerHTML = `<div style="text-align:center;padding:32px;color:var(--sell);font-size:13px">
+        Could not load rows. Make sure Excel file is in the same folder as the backend.
+      </div>`;
+    }
+  }
+
+  function renderRows(rows) {
+    const table = document.getElementById('trade-table');
+    table.innerHTML = '';
+
+    rows.forEach(row => {
+      const isEmpty = !row.symbol;
+      const div = document.createElement('div');
+      div.className = `trade-row${isEmpty ? ' empty' : ''}`;
+      div.id = `row-${row.row}`;
+      div.innerHTML = `
+        <div class="row-num">B${row.button}</div>
+        <div class="row-symbol ${isEmpty ? 'empty-sym' : ''}">${row.symbol || '— empty —'}</div>
+        <div class="row-qty">${row.qty ?? '—'}</div>
+        <div class="row-price">${row.rate ? '₹' + row.rate.toFixed(2) : '—'}</div>
+        <div class="row-actions">
+          <button
+            class="btn-buy"
+            id="buy-${row.row}"
+            onclick="placeOrder(${row.row}, 'BUY')"
+            ${isEmpty ? 'disabled' : ''}
+          >BUY</button>
+          <button
+            class="btn-sell"
+            id="sell-${row.row}"
+            onclick="placeOrder(${row.row}, 'SELL')"
+            ${isEmpty ? 'disabled' : ''}
+          >SELL</button>
+        </div>
+      `;
+      table.appendChild(div);
+    });
+  }
+
+  // ── Place order ────────────────────────────────────────────────
+  async function placeOrder(row, button) {
+    const buyBtn  = document.getElementById(`buy-${row}`);
+    const sellBtn = document.getElementById(`sell-${row}`);
+    const activeBtn = button === 'BUY' ? buyBtn : sellBtn;
+
+    // Lock buttons
+    buyBtn.disabled  = true;
+    sellBtn.disabled = true;
+    activeBtn.textContent = '...';
+    activeBtn.classList.add('loading');
+
+    try {
+      const res  = await fetch(`${API}/order`, {
+        method : 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body   : JSON.stringify({ row, button }),
+      });
+      const data = await res.json();
+
+      if (res.ok) {
+        const msg = `${button} ${data.qty} × ${data.symbol} @ ₹${data.price}`;
+        addLog(button.toLowerCase(), msg, data.order_no, data.timestamp);
+        showToast(`Order placed! #${data.order_no}`, 'success');
+        highlightRow(row, button);
+      } else {
+        addLog('err', data.detail || 'Order failed', '', new Date().toLocaleTimeString());
+        showToast(data.detail || 'Order failed', 'error');
+      }
+    } catch(e) {
+      showToast('Connection error', 'error');
+      addLog('err', 'Connection error', '', new Date().toLocaleTimeString());
+    } finally {
+      buyBtn.disabled  = false;
+      sellBtn.disabled = false;
+      activeBtn.textContent = button === 'BUY' ? 'BUY' : 'SELL';
+      activeBtn.classList.remove('loading');
+    }
+  }
+
+  function highlightRow(row, button) {
+    const el    = document.getElementById(`row-${row}`);
+    const color = button === 'BUY' ? 'rgba(34,197,94,0.08)' : 'rgba(239,68,68,0.08)';
+    el.style.background = color;
+    el.style.borderColor = button === 'BUY' ? 'rgba(34,197,94,0.4)' : 'rgba(239,68,68,0.4)';
+    setTimeout(() => {
+      el.style.background   = '';
+      el.style.borderColor  = '';
+    }, 2000);
+  }
+
+  // ── Order log ──────────────────────────────────────────────────
+  function addLog(type, msg, orderNo, time) {
+    const list = document.getElementById('log-list');
+    const empty = document.getElementById('empty-log');
+    if (empty) empty.remove();
+
+    const item = document.createElement('div');
+    item.className = 'log-item';
+    item.innerHTML = `
+      <span class="log-time">${time || new Date().toLocaleTimeString('en-IN', {hour12:false})}</span>
+      <span class="log-tag ${type}">${type.toUpperCase()}</span>
+      <span class="log-msg">${msg}</span>
+      ${orderNo ? `<span class="log-order">#${orderNo}</span>` : ''}
+    `;
+    list.prepend(item);
+  }
+
+  function clearLog() {
+    const list = document.getElementById('log-list');
+    list.innerHTML = '<div class="empty-log" id="empty-log">No orders placed yet</div>';
+  }
+
+  // ── Toast ──────────────────────────────────────────────────────
+  let toastTimer;
+  function showToast(msg, type='success') {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className   = `show ${type}`;
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => { t.className = ''; }, 3000);
+  }
+
+  // ── Init ───────────────────────────────────────────────────────
+  async function init() {
+    try {
+      const res  = await fetch(`${API}/auth/status`);
+      const data = await res.json();
+      if (data.logged_in) {
+        userName = data.uname || data.uid || 'Trader';
+        loggedIn = true;
+        showTrading();
+      } else {
+        showLogin();
+      }
+    } catch(e) {
+      showLogin();
+    }
+  }
+
+  init();
+</script>
+</body>
+</html>
