@@ -116,6 +116,11 @@ def auth_status():
     token_store["access_token"] = None
     return {"logged_in": False}
 
+@app.get("/myip")
+def get_my_ip():
+    res = requests.get("https://api.ipify.org?format=json")
+    return res.json()
+
 
 @app.delete("/auth/logout")
 def logout():
