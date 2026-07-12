@@ -173,15 +173,6 @@
     .btn-connect:active { transform: translateY(0); }
 
     /* ── Code Input ────────────────────────────────────────────── */
-    #code-screen {
-      display: none;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      min-height: 60vh;
-      gap: 24px;
-    }
-
     .code-card {
       background: var(--surface);
       border: 1px solid var(--border);
@@ -772,55 +763,45 @@
   // ── Login flow ─────────────────────────────────────────────────
   async function startLogin() {
     try {
-      const res  = await fetch(`${API}/oauth-url`);
-      const data = await res.json();
-      window.open(data.url, '_blank');
-      showCode();
+        const res  = await fetch(`${API}/oauth-url`);
+        const data = await res.json();
+        window.open(data.url, '_blank', 'width=500,height=700');
+        window.addEventListener('message', async function handler(e) {
+            if (e.data && e.data.code) {
+                window.removeEventListener('message', handler);
+                await handleCode(e.data.code);
+            }
+        });
     } catch(e) {
-      showToast('Could not reach backend server', 'error');
+        showToast('Could not reach backend server', 'error');
     }
-  }
+}
 
-  async function confirmCode() {
-    const input = document.getElementById('redirect-url-input').value.trim();
-    if (!input || !input.includes('code=')) {
-      showToast('Please paste the full redirect URL', 'error');
-      return;
-    }
-
-    const code = input.split('code=')[1]?.split('&')[0]?.trim();
-    if (!code) {
-      showToast('Could not extract code from URL', 'error');
-      return;
-    }
-
-    const btn = document.getElementById('btn-confirm');
-    btn.disabled = true;
-    btn.textContent = 'Confirming...';
-
+async function handleCode(code) {
+    const btn = document.querySelector('.btn-connect');
+    if (btn) { btn.disabled = true; btn.textContent = 'Connecting...'; }
     try {
-      const res  = await fetch(`${API}/auth/token`, {
-        method : 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body   : JSON.stringify({ code }),
-      });
-      const data = await res.json();
-      if (res.ok) {
-        userName = data.uname || data.uid || 'Trader';
-        loggedIn = true;
-        addLog('info', `Logged in as ${userName}`, '', '');
-        showTrading();
-        showToast(`Welcome, ${userName}!`, 'success');
-      } else {
-        showToast(data.detail || 'Login failed', 'error');
-      }
+        const res  = await fetch(`${API}/auth/token`, {
+            method : 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body   : JSON.stringify({ code }),
+        });
+        const data = await res.json();
+        if (res.ok) {
+            userName = data.uname || data.uid || 'Trader';
+            loggedIn = true;
+            addLog('info', `Logged in as ${userName}`, '', '');
+            showTrading();
+            showToast(`Welcome, ${userName}!`, 'success');
+        } else {
+            showToast(data.detail || 'Login failed', 'error');
+        }
     } catch(e) {
-      showToast('Connection error. Is the backend running?', 'error');
-    } finally {
-      btn.disabled = false;
-      btn.textContent = 'Confirm Login';
+        showToast('Connection error', 'error');
     }
-  }
+}
+
+  
 
   async function logout() {
     await fetch(`${API}/auth/logout`, { method: 'DELETE' });
