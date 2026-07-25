@@ -10,7 +10,7 @@ import hashlib
 import requests
 import openpyxl
 from datetime import datetime
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Header
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
@@ -25,9 +25,12 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-APP_KEY    = os.getenv("APP_KEY",    "YMUS1087_01")
-SECRET_KEY = os.getenv("SECRET_KEY", "mqordqqa5qqlzgu3fm")
-CLIENT_ID  = os.getenv("CLIENT_ID",  "YMUS1087")
+# No hardcoded fallbacks - this file is in a public repo, so a
+# default secret here would be visible to anyone who looks.
+APP_KEY    = os.getenv("APP_KEY")
+SECRET_KEY = os.getenv("SECRET_KEY")
+CLIENT_ID  = os.getenv("CLIENT_ID")
+INTERNAL_API_KEY = os.getenv("INTERNAL_API_KEY")  # shared secret for Excel -> this server
 EXCEL_FILE = os.getenv("EXCEL_FILE", "1. Nifty_Macro_V1.1.xlsm")
 SHEET_NAME = "Paper Trading"
 WATCH_ROWS = [3, 4, 5, 6, 7]
@@ -104,6 +107,17 @@ def exchange_token(req: TokenRequest):
         token_store["access_token"] = ret.get("access_token") or ret.get("susertoken")
         return {"success": True, "uid": ret.get("uid"), "uname": ret.get("uname"), "actid": ret.get("actid")}
     raise HTTPException(status_code=401, detail=f"TradeSmart said: {ret} | checksum input was: {APP_KEY + SECRET_KEY + req.code[:6]}...")
+
+
+@app.get("/auth/token")
+def get_current_token(x_internal_key: str = Header(None)):
+    """Lets the Excel macro pull the token this server already holds,
+    instead of re-implementing the OAuth/checksum exchange in VBA."""
+    if not INTERNAL_API_KEY or x_internal_key != INTERNAL_API_KEY:
+        raise HTTPException(status_code=403, detail="Forbidden")
+    if not token_store["access_token"]:
+        raise HTTPException(status_code=401, detail="Not logged in - open the dashboard and click Connect first")
+    return {"access_token": token_store["access_token"], "uid": CLIENT_ID, "actid": CLIENT_ID}
 
 
 @app.get("/auth/status")
