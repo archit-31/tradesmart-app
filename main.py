@@ -130,6 +130,52 @@ def auth_status():
     token_store["access_token"] = None
     return {"logged_in": False}
 
+
+class SearchRequest(BaseModel):
+    stext: str
+    exch: str
+
+@app.post("/search-symbol")
+def search_symbol(req: SearchRequest, x_internal_key: str = Header(None)):
+    """Proxies SearchScrip through this server, so it comes from the same
+    IP that logged in - calling TradeSmart directly from a laptop can get
+    rejected with 'invalid ipaddress' even if that IP is whitelisted."""
+    if not INTERNAL_API_KEY or x_internal_key != INTERNAL_API_KEY:
+        raise HTTPException(status_code=403, detail="Forbidden")
+    if not token_store["access_token"]:
+        raise HTTPException(status_code=401, detail="Not logged in")
+    ret = ts_post("SearchScrip", {"uid": CLIENT_ID, "stext": req.stext, "exch": req.exch})
+    return ret
+
+
+class PlaceOrderRawRequest(BaseModel):
+    exch: str
+    tsym: str
+    qty: str
+    prc: str
+    dscqty: str = "0"
+    prd: str
+    trantype: str
+    prctyp: str
+    ret: str = "DAY"
+
+@app.post("/place-order-raw")
+def place_order_raw(req: PlaceOrderRawRequest, x_internal_key: str = Header(None)):
+    """Same idea as /search-symbol - proxies PlaceOrder through this
+    server so it's not coming from a different, unwhitelisted IP."""
+    if not INTERNAL_API_KEY or x_internal_key != INTERNAL_API_KEY:
+        raise HTTPException(status_code=403, detail="Forbidden")
+    if not token_store["access_token"]:
+        raise HTTPException(status_code=401, detail="Not logged in")
+    payload = {
+        "uid": CLIENT_ID, "actid": CLIENT_ID, "exch": req.exch,
+        "tsym": req.tsym, "qty": req.qty, "prc": req.prc,
+        "dscqty": req.dscqty, "prd": req.prd, "trantype": req.trantype,
+        "prctyp": req.prctyp, "ret": req.ret, "ordersource": "API",
+    }
+    ret = ts_post("PlaceOrder", payload)
+    return ret
+
 @app.get("/myip")
 def get_my_ip():
     res = requests.get("https://api.ipify.org?format=json")
